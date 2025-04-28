@@ -3,12 +3,14 @@ from sentence_transformers import SentenceTransformer
 import torch.nn as nn
 import logging
 
+# setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
 logger.addHandler(ch)
 
+# multi-task model, one head for task a, one for task b
 class MultiTaskModel(nn.Module):
     def __init__(self, embedding_dim, num_classes_task_a, num_classes_task_b):
         super(MultiTaskModel, self).__init__()
@@ -24,6 +26,7 @@ class MultiTaskModel(nn.Module):
             logger.error(f"Error in MultiTaskModel forward pass: {e}")
             raise
 
+# load pre-trained model
 def load_model(model_name: str = 'all-MiniLM-L6-v2') -> SentenceTransformer:
     try:
         model = SentenceTransformer(model_name)
@@ -32,6 +35,7 @@ def load_model(model_name: str = 'all-MiniLM-L6-v2') -> SentenceTransformer:
         logger.error(f"Error loading model '{model_name}': {e}")
         raise
 
+# encode a list of sentences into embeddings
 def encode_sentences(model: SentenceTransformer, sentences: list):
     try:
         logger.info("Encoding sentences...")
@@ -41,6 +45,7 @@ def encode_sentences(model: SentenceTransformer, sentences: list):
         logger.error(f"Error encoding sentences: {e}")
         raise
 
+# get the embedding dimensions
 def get_embedding_dimension(model: SentenceTransformer) -> int:
     try:
         sample_embedding = model.encode(["test"], convert_to_tensor=True)
@@ -49,6 +54,7 @@ def get_embedding_dimension(model: SentenceTransformer) -> int:
         logger.error(f"Error getting embedding dimension: {e}")
         raise
 
+# linear projection layer to change dimensions
 class ProjectionLayer(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(ProjectionLayer, self).__init__()
@@ -61,6 +67,7 @@ class ProjectionLayer(nn.Module):
             logger.error(f"Error in ProjectionLayer forward pass: {e}")
             raise
 
+# project the embeddings (if needed)
 def project_embeddings(embeddings: torch.Tensor, target_dim: int) -> torch.Tensor:
     try:
         original_dim = embeddings.shape[1]

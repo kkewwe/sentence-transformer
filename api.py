@@ -5,6 +5,7 @@ from app.main import load_model, encode_sentences, get_embedding_dimension, Mult
 from typing import Optional, List
 import logging
 
+# basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -22,10 +23,11 @@ embedding_dim = get_embedding_dimension(sentence_model)
 
 multitask_model = MultiTaskModel(
     embedding_dim=embedding_dim,
-    num_classes_task_a=3,
-    num_classes_task_b=2
+    num_classes_task_a=3, # limit it to 3 classes
+    num_classes_task_b=2 # limit it to 2 sentiments
 )
 
+# request and response schemas
 class EncodingSentenceRequest(BaseModel):
     sentences: list = ["The quick brown fox jumped over the lazy dog"]
     embedding_dimensions: int = 384
@@ -49,10 +51,12 @@ class TaskBResponse(BaseModel):
     sentiment_logits: list
     predicted_sentiments: list
 
+# fast api routes
 @app.post("/encode", response_model=EmbeddingResponse)
 async def encode_sentences_api(request: EncodingSentenceRequest):
     embeddings = encode_sentences(sentence_model, request.sentences)
 
+    # allows for a return of multiple dimensions through embedding projection
     if request.embedding_dimensions != 384:
         embeddings = project_embeddings(embeddings, request.embedding_dimensions)
 
@@ -65,8 +69,10 @@ async def classify_sentences_api(request: SentenceRequestA):
     task_a_logits, _ = multitask_model(embeddings)
     task_a_logits_list = task_a_logits.detach().cpu().numpy().tolist()
 
+    # map predictions to labels
     predictions = torch.argmax(task_a_logits, dim=1)
     predicted_labels = [request.labels[idx] for idx in predictions.tolist()]
+
     return TaskAResponse(
         classification_logits=task_a_logits_list,
         predicted_labels=predicted_labels
@@ -78,8 +84,10 @@ async def sentiment_sentences_api(request: SentenceRequestB):
     _, task_b_logits = multitask_model(embeddings)
     task_b_logits_list = task_b_logits.detach().cpu().numpy().tolist()
 
+    # map predictions to labels
     predictions = torch.argmax(task_b_logits, dim=1)
     predicted_sentiments=(request.labels[idx] for idx in predictions.tolist())
+
     return TaskBResponse(
         sentiment_logits=task_b_logits_list,
         predicted_sentiments=predicted_sentiments

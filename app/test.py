@@ -8,7 +8,7 @@ from main import load_model, encode_sentences, get_embedding_dimension, MultiTas
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def set_seed(seed: int = 42):
+def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
